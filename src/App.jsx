@@ -24,7 +24,10 @@ export default function App() {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    const newSocket = io(BACKEND_URL);
+    const newSocket = io(BACKEND_URL, {
+      transports: ['polling', 'websocket'],
+      secure: true
+    });
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
