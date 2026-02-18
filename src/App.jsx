@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = 'https://backend-rele-production.up.railway.app';
 
 export default function App() {
   const [systemState, setSystemState] = useState({
