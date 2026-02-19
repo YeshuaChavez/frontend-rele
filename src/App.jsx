@@ -342,7 +342,7 @@ export default function App() {
           border: '1px solid rgba(255,255,255,0.05)'
         }}>
           <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            Light Status
+            System Status
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{
