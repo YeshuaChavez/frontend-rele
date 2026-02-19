@@ -3,7 +3,20 @@ import io from 'socket.io-client';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://backend-rele-production.up.railway.app';
 
+// ==================== RESPONSIVE HOOK ====================
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return isMobile;
+}
+
 export default function App() {
+  const isMobile = useIsMobile();
+
   const [systemState, setSystemState] = useState({
     light_on: false,
     manual_mode: false,
@@ -51,26 +64,17 @@ export default function App() {
         light_on: data.light_on,
         manual_mode: data.manual_mode
       }));
-      // Solo actualizamos listas en cambios manuales/voz
       setTimeout(() => fetchRecentEvents(), 200);
     });
 
-    // --- AQUÍ ESTÁ LA CORRECCIÓN MÁGICA ---
     newSocket.on('esp32_motion', (data) => {
       console.log('📡 EVENTO SOCKET:', data);
       
-      // 1. Aseguramos que sea booleano real (evita errores de string "False" vs false)
       const isDetected = !!data.detected;
       const isLightOn = !!data.light_on; 
 
       setSystemState(prev => {
-        // LÓGICA BLINDADA:
-        // Si el movimiento se detuvo (isDetected === false), 
-        // asumimos que la luz DEBE estar apagada visualmente (para modo auto).
-        // Si data.light_on viene true por error, lo ignoramos si no hay movimiento.
-        
         const finalLightState = isDetected ? isLightOn : (data.light_on || false);
-
         return {
           ...prev,
           motion_detected: isDetected,
@@ -79,10 +83,8 @@ export default function App() {
         };
       });
 
-      // 2. Manejo de la actualización de la lista (Base de Datos)
       if (!isDetected) {
         console.log('🛑 Movimiento terminó. Esperando para actualizar historial...');
-        // Damos 1 segundo completo para asegurar que la DB guardó el evento "OFF"
         setTimeout(() => {
             fetchRecentEvents();
             fetchTodayStats();
@@ -226,23 +228,29 @@ export default function App() {
     <div style={{
       minHeight: '100vh',
       background: '#050810',
-      padding: '2rem',
+      padding: isMobile ? '1rem' : '2rem',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, #0a1128 0%, #05080f 100%)',
         borderRadius: '16px',
-        padding: '2rem',
-        marginBottom: '2rem',
+        padding: isMobile ? '1.25rem' : '2rem',
+        marginBottom: isMobile ? '1rem' : '2rem',
         border: '1px solid rgba(255,255,255,0.05)',
         position: 'relative'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'flex-start' : 'center',
+          gap: isMobile ? '1rem' : '0'
+        }}>
           <div>
             <h1 style={{ 
               margin: 0, 
-              fontSize: '2rem', 
+              fontSize: isMobile ? '1.4rem' : '2rem', 
               color: '#ffffff',
               fontWeight: '600',
               letterSpacing: '-0.5px'
@@ -252,19 +260,24 @@ export default function App() {
             <p style={{ 
               margin: '0.3rem 0 0 0', 
               color: '#6b7280', 
-              fontSize: '0.95rem'
+              fontSize: isMobile ? '0.8rem' : '0.95rem'
             }}>
               Monitoreo y Control en Tiempo Real
             </p>
           </div>
           
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div style={{
+            display: 'flex',
+            gap: '0.75rem',
+            alignItems: 'center',
+            width: isMobile ? '100%' : 'auto'
+          }}>
             <button
               onClick={downloadCSV}
               disabled={downloading}
               style={{
-                padding: '0.75rem 1.5rem',
-                fontSize: '0.9rem',
+                padding: isMobile ? '0.6rem 1rem' : '0.75rem 1.5rem',
+                fontSize: isMobile ? '0.8rem' : '0.9rem',
                 fontWeight: '600',
                 border: 'none',
                 borderRadius: '8px',
@@ -276,7 +289,8 @@ export default function App() {
                 opacity: downloading ? 0.5 : 1,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem'
+                gap: '0.5rem',
+                flex: isMobile ? '1' : 'unset'
               }}
               onMouseOver={(e) => !downloading && (e.currentTarget.style.transform = 'translateY(-2px)')}
               onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
@@ -288,10 +302,11 @@ export default function App() {
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              padding: '0.5rem 1rem',
+              padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 1rem',
               background: connectionStatus === 'connected' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
               border: `1px solid ${connectionStatus === 'connected' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-              borderRadius: '8px'
+              borderRadius: '8px',
+              whiteSpace: 'nowrap'
             }}>
               <div style={{
                 width: '6px',
@@ -315,9 +330,9 @@ export default function App() {
       {/* Main Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '1.5rem',
-        marginBottom: '1.5rem'
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: isMobile ? '1rem' : '1.5rem',
+        marginBottom: isMobile ? '1rem' : '1.5rem'
       }}>
         {/* Light Status */}
         <div style={{
@@ -364,12 +379,16 @@ export default function App() {
           borderRadius: '16px',
           padding: '1.5rem',
           border: '1px solid rgba(255,255,255,0.05)',
-          gridColumn: 'span 2'
+          gridColumn: isMobile ? 'auto' : 'span 2'
         }}>
           <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
             System Controls
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+            gap: '1rem'
+          }}>
             <button
               onClick={() => controlLight('on')}
               disabled={loading}
@@ -446,9 +465,9 @@ export default function App() {
       {/* Stats Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '1.5rem',
-        marginBottom: '1.5rem'
+        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: isMobile ? '1rem' : '1.5rem',
+        marginBottom: isMobile ? '1rem' : '1.5rem'
       }}>
         <StatCard label="Events Today" value={todayStats.total_events} color="#3b82f6" />
         <StatCard label="Activity Time" value={`${Math.floor((todayStats.total_duration || 0) / 60)}m`} color="#8b5cf6" />
@@ -465,7 +484,7 @@ export default function App() {
         borderRadius: '16px',
         padding: '1.5rem',
         border: '1px solid rgba(255,255,255,0.05)',
-        marginTop: '1.5rem'
+        marginTop: isMobile ? '1rem' : '1.5rem'
       }}>
         <h2 style={{ 
           margin: '0 0 1.5rem 0', 
@@ -527,6 +546,8 @@ function StatCard({ label, value, color }) {
 }
 
 function HourlyChart({ data }) {
+  const isMobile = useIsMobile();
+
   if (data.length === 0) {
     return (
       <div style={{
@@ -557,10 +578,10 @@ function HourlyChart({ data }) {
 
   const maxEvents = Math.max(...data.map(d => d.total_events), 1);
   
-  const containerWidth = typeof window !== 'undefined' ? Math.min(window.innerWidth - 100, 1200) : 1200;
+  const containerWidth = typeof window !== 'undefined' ? Math.min(window.innerWidth - (isMobile ? 64 : 100), 1200) : 1200;
   const width = containerWidth;
-  const height = 300;
-  const padding = { top: 30, right: 30, bottom: 50, left: 60 };
+  const height = isMobile ? 200 : 300;
+  const padding = { top: 30, right: isMobile ? 15 : 30, bottom: 50, left: isMobile ? 40 : 60 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
@@ -666,7 +687,7 @@ function HourlyChart({ data }) {
             </g>
           ))}
 
-          {points.filter((_, i) => i % Math.max(1, Math.floor(points.length / 8)) === 0).map((point, i) => (
+          {points.filter((_, i) => i % Math.max(1, Math.floor(points.length / (isMobile ? 4 : 8))) === 0).map((point, i) => (
             <text
               key={i}
               x={point.x}
@@ -838,14 +859,21 @@ function EventItem({ event }) {
       borderRadius: '10px',
       borderLeft: `3px solid ${info.borderColor}`
     }}>
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ 
           display: 'flex',
           alignItems: 'center',
           gap: '0.5rem',
           marginBottom: '0.3rem'
         }}>
-          <div style={{ fontWeight: '600', color: info.color, fontSize: '0.9rem' }}>
+          <div style={{
+            fontWeight: '600',
+            color: info.color,
+            fontSize: '0.9rem',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
             {info.icon} {info.title}
           </div>
         </div>
@@ -874,7 +902,9 @@ function EventItem({ event }) {
           borderRadius: '6px',
           color: '#ffffff',
           fontWeight: '700',
-          fontSize: '0.85rem'
+          fontSize: '0.85rem',
+          marginLeft: '0.5rem',
+          flexShrink: 0
         }}>
           {event.duration_seconds}s
         </div>
