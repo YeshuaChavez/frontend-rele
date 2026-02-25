@@ -879,7 +879,7 @@ function EventItem({ event }) {
         </div>
         
         <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-          {new Date(event.timestamp).toLocaleString('en-US', {
+          {new Date(event.timestamp + 'Z').toLocaleString('es-PE', {
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
