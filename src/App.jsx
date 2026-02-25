@@ -892,7 +892,7 @@ function EventItem({ event }) {
         <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
           {(() => {
             const fecha = new Date(event.timestamp);
-            fecha.setHours(fecha.getHours() + 5); // sumar 5h porque viene como UTC-5 interpretado como UTC
+            fecha.setHours(fecha.getHours() - 5); // restar 5h porque viene como UTC-5 interpretado como UTC
             return fecha.toLocaleString('es-PE', {
               month: 'short',
               day: 'numeric',
