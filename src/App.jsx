@@ -64,7 +64,14 @@ export default function App() {
         light_on: data.light_on,
         manual_mode: data.manual_mode
       }));
-      setTimeout(() => fetchRecentEvents(), 200);
+      // ← CAMBIO: fetch directo en vez de llamar la función
+      setTimeout(async () => {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/events/recent?limit=10`);
+          const json = await res.json();
+          setRecentEvents(json);
+        } catch(e) {}
+      }, 1500);
     });
 
     newSocket.on('esp32_motion', (data) => {
@@ -73,23 +80,27 @@ export default function App() {
       const isDetected = !!data.detected;
       const isLightOn = !!data.light_on; 
 
-      setSystemState(prev => {
-        const finalLightState = isDetected ? isLightOn : (data.light_on || false);
-        return {
-          ...prev,
-          motion_detected: isDetected,
-          light_on: finalLightState, 
-          manual_mode: data.manual_mode !== undefined ? data.manual_mode : prev.manual_mode
-        };
-      });
+      setSystemState(prev => ({
+        ...prev,
+        motion_detected: isDetected,
+        light_on: isDetected ? isLightOn : (data.light_on || false),
+        manual_mode: data.manual_mode !== undefined ? data.manual_mode : prev.manual_mode
+      }));
 
-      if (!isDetected) {
-        console.log('🛑 Movimiento terminó. Esperando para actualizar historial...');
-        setTimeout(() => {
-            fetchRecentEvents();
-            fetchTodayStats();
-        }, 1000); 
-      }
+      // ← CAMBIO: siempre refresca, no solo cuando termina
+      setTimeout(async () => {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/events/recent?limit=10`);
+          const json = await res.json();
+          setRecentEvents(json);
+          
+          const res2 = await fetch(`${BACKEND_URL}/api/stats/today`);
+          const json2 = await res2.json();
+          setTodayStats(json2);
+        } catch(e) {
+          console.error(e);
+        }
+      }, 1500);
     });
 
     newSocket.on('mode_update', (data) => {
