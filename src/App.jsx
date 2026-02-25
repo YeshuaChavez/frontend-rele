@@ -890,14 +890,17 @@ function EventItem({ event }) {
         </div>
         
         <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-          {new Date(event.timestamp).toLocaleString('es-PE', {
-            timeZone: 'America/Lima',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          })}
+          {(() => {
+            const fecha = new Date(event.timestamp);
+            fecha.setHours(fecha.getHours() + 5); // sumar 5h porque viene como UTC-5 interpretado como UTC
+            return fecha.toLocaleString('es-PE', {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            });
+          })()}
         </div>
         
         {event.notes && (
