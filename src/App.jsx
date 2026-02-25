@@ -890,7 +890,8 @@ function EventItem({ event }) {
         </div>
         
         <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-          {new Date(event.timestamp + 'Z').toLocaleString('es-PE', {
+          {new Date(event.timestamp).toLocaleString('es-PE', {
+            timeZone: 'America/Lima',
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
